@@ -4,6 +4,5 @@ int main()
 {
 	Controller controller;
 	controller.Play();
-	system("pause");
 	return 0;
 }

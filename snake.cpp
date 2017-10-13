@@ -39,18 +39,14 @@ size_t Snake::size()
 	return snake.size();
 }
 
-void Snake::Eat(Point &p)
+void Snake::Eat()
 {
-	push_back(p);
-	p.SetShape(shape);
-	p.SetColor(color);
-	p.Print();
-	for (auto it : snake)
-	{
-		it.SetShape(shape);
-		it.SetColor(color);
-		it.Print();
-	}
+	//蛇的末尾增加一格子
+	int end_x = 2 * snake[0].Getx() - snake[1].Getx();
+	int end_y = 2 * snake[0].Gety() - snake[1].Gety();
+	Point temp(end_x, end_y,color,shape);
+	snake.push_front(temp);
+	temp.Print();
 }
 
 void Snake::Move()
@@ -68,10 +64,16 @@ void Snake::Move()
 	else
 		throw runtime_error("direct is wrong");
 
-	push_back(p);					//point add deque
+	//更改首元素的颜色
+	head().Clear();
+	head().SetColor(color);
+	head().Print();
+
+
 	p.SetShape(shape);
-	p.SetColor(color);
+	p.SetColor('y');
 	p.Print();						//show this point
+	push_back(p);					//point add deque
 
 	snake[0].Clear();
 	pop_front();
@@ -79,13 +81,15 @@ void Snake::Move()
 
 void Snake::show()
 {
-	for (auto p : snake)
+	for (auto it = snake.begin(); it != snake.end() - 1; it++)
 	{
-		p.SetShape(shape);
-		p.SetColor(color);
-		p.Print();
+		it->SetShape(shape);
+		it->SetColor(color);
+		it->Print();
 	}
-
+	head().SetColor('y');
+	head().SetShape(shape);
+	head().Print();
 }
 
 void Snake::SetDirect(const string & d)

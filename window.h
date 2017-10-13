@@ -27,6 +27,8 @@ void Window<col, row>::Show()
 	ss << "mode con cols=" << col * 2 << " lines=" << row;
 	cout << ss.str() << endl;
 	system(const_cast<char*>(ss.str().c_str()));//system(mode con cols=88 lines=88)设置窗口宽度和高度
+	SetColor('w');
+	system("cls");
 }
 
 

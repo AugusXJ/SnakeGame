@@ -7,7 +7,7 @@ class Point
 {
 public:
 	Point() = default;
-	Point(int x, int y, char color = 'w', string shape = "O"):x(x), y(y), color(color), shape(shape){}
+	Point(int x, int y, char color = 'w', string shape = "■"):x(x), y(y), color(color), shape(shape){}
 	void SetColor(char);	//设置点的颜色
 	void SetShape(string);	//设置形状
 	void ChangePos(int x, int y);		//改变点的位置

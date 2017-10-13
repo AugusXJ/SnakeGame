@@ -8,14 +8,42 @@ using namespace std;
 
 void Controller::Play()
 {
-	SelectInterface sif;
-	sif.Play();				//选择画面
-	GameInterface gif;
-	gif.DrawGame();
+	while (true)
+	{
+		SelectInterface sif;
+		sif.Play();				//选择画面
+		GameInterface gif;
+		gif.key = sif.key;
+		gif.speed = sif.speed;
+		gif.DrawGame();
+		int temp = gif.PlayGame();
+		if (temp == 2)
+			break;
+	}
+
 
 }
 
-
+void Controller::OutLevel(int key)
+{
+	switch (key)
+	{
+	case 1:
+		std::cout << "简单模式";
+		break;
+	case 2:
+		std::cout << "普通模式";
+		break;
+	case 3:
+		std::cout << "困难模式";
+		break;
+	case 4:
+		std::cout << "炼狱模式";
+		break;
+	default:
+		break;
+	}
+}
 
 void SelectInterface::Play()
 {
@@ -39,7 +67,7 @@ void SelectInterface::Play()
 
 	//以上下键进行控制
 	int ch;
-	int key = 1;
+	key = 1;
 
 	//选择界面上方移动的蛇
 	Snake snake;
@@ -66,8 +94,9 @@ void SelectInterface::Play()
 		if (snake.GetDirect() == "up" && snake.head() == Point(10, 5))
 			snake.SetDirect("right");
 		Sleep(30);
-		if (ch = _getch())
+		if (_kbhit())
 		{
+			ch = _getch();
 			if (ch == 13)		//输出回车键跳出
 				break;
 			Select_Move(key, ch);
@@ -130,28 +159,13 @@ void SelectInterface::Select_Print(int key, bool ifTouched)
 		SetColor(color);
 	else
 		SetBackColor();
-	switch (key)
-	{
-	case 1:
-		cout << "简单难度";
-		break;
-	case 2:
-		cout << "普通难度";	
-		break;
-	case 3:
-		cout << "困难难度";
-		break;
-	case 4:
-		cout << "炼狱难度";
-		break;
-	default:
-		break;
-	}
+	OutLevel(key);
 
 }
 
 void GameInterface::DrawGame()//绘制游戏界面
 {
+	Window<41, 32> win;
 	system("cls");//清屏
 
 	/*绘制地图*/
@@ -179,23 +193,7 @@ void GameInterface::DrawGame()//绘制游戏界面
 	SetCursorPosition(31, 4);
 	std::cout << "难度：";
 	SetCursorPosition(36, 5);
-	switch (key)
-	{
-	case 1:
-		std::cout << "简单模式";
-		break;
-	case 2:
-		std::cout << "普通模式";
-		break;
-	case 3:
-		std::cout << "困难模式";
-		break;
-	case 4:
-		std::cout << "炼狱模式";
-		break;
-	default:
-		break;
-	}
+	OutLevel(key);			//绘制难度线
 	SetCursorPosition(31, 7);
 	std::cout << "得分：";
 	SetCursorPosition(37, 8);
@@ -210,67 +208,54 @@ int GameInterface::PlayGame()
 {
 	/*初始化蛇和食物*/
 	Snake snake;
-	snake.push_back(Point(4,1));
+	snake.push_back(Point(4,2));snake.push_back(Point(4,3));
+	snake.show();
 	snake.SetDirect("down");
-	Food food; food.Draw(snake);
+	Food food; 
+	food.Draw(snake);
 
 	/*游戏循环*/
 	while (!snake.ifDead()) //判断是否撞墙或撞到自身，即是否还有生命
 	{
-		/*调出选择菜单*/
-		if (!csnake->ChangeDirection()) //按Esc键时
+		if (_kbhit())
 		{
-			int tmp = Menu();//绘制菜单，并得到返回值
-			switch (tmp)
+			int ch = _getch();
+			switch (ch)
 			{
-			case 1://继续游戏
+			case 72:
+				if(snake.GetDirect()!="down")
+					snake.SetDirect("up");
 				break;
-
-			case 2://重新开始
-				delete csnake;
-				delete cfood;
-				return 1;//将1作为PlayGame函数的返回值返回到Game函数中，表示重新开始
-
-			case 3://退出游戏
-				delete csnake;
-				delete cfood;
-				return 2;//将2作为PlayGame函数的返回值返回到Game函数中，表示退出游戏
-
+			case 80:
+				if (snake.GetDirect() != "up")
+					snake.SetDirect("down");
+				break;
+			case 75:
+				if (snake.GetDirect() != "right")
+					snake.SetDirect("left");
+				break;
+			case 77:
+				if (snake.GetDirect() != "left")
+					snake.SetDirect("right");
+				break;
+			case 27:
+				GamePause();				//系统暂停
 			default:
 				break;
 			}
 		}
-
-		if (csnake->GetFood(*cfood)) //吃到食物
+		if (snake.ifGetFood(food)) //吃到食物
 		{
-			csnake->Move();//蛇增长
-			UpdateScore(1);//更新分数，1为分数权重
+			snake.Eat();//蛇增长
+			UpdateScore();//更新分数，1为分数权重
 			RewriteScore();//重新绘制分数
-			cfood->DrawFood(*csnake);//绘制新食物
+			food.Draw(snake);//绘制新食物
 		}
-		else
-		{
-			csnake->NormalMove();//蛇正常移动
-		}
-
-		if (csnake->GetBigFood(*cfood)) //吃到限时食物
-		{
-			csnake->Move();
-			UpdateScore(cfood->GetProgressBar() / 5);//分数根据限时食物进度条确定
-			RewriteScore();
-		}
-
-		if (cfood->GetBigFlag()) //如果此时有限时食物，闪烁它
-		{
-			cfood->FlashBigFood();
-		}
-
+		snake.Move();
 		Sleep(speed);//制造蛇的移动效果
 	}
 
-	/*蛇死亡*/
-	delete csnake;//释放分配的内存空间
-	delete cfood;
+	//*蛇死亡*/
 	int tmp = GameOver();//绘制游戏结束界面，并返回所选项
 	switch (tmp)
 	{
@@ -281,4 +266,147 @@ int GameInterface::PlayGame()
 	default:
 		return 2;
 	}
+}
+
+void GameInterface::RewriteScore()//重绘分数
+{
+	/*为保持分数尾部对齐，将最大分数设置为6位，计算当前分数位数，将剩余位数用空格补全，再输出分数*/
+	SetCursorPosition(37, 8);
+	SetColor('r');
+	int bit = 0;
+	int tmp = score;
+	while (tmp != 0)
+	{
+		++bit;
+		tmp /= 10;
+	}
+	for (int i = 0; i < (6 - bit); ++i)
+	{
+		std::cout << " ";
+	}
+	std::cout << score;
+}
+
+void GameInterface::GamePause()
+{
+	int key = 1;
+	SetBackColor();
+	SetCursorPosition(33, 20);
+	cout << "继续游戏";
+	SetColor('b');
+	SetCursorPosition(33, 22);
+	cout << "退出游戏";
+
+	int ch;
+	while (ch = _getch())
+	{
+		switch (ch)
+		{
+		case 72:
+			key = 1;
+			SetBackColor();
+			SetCursorPosition(33, 20);
+			cout << "继续游戏";
+			SetColor('b');
+			SetCursorPosition(33, 22);
+			cout << "退出游戏";
+			break;
+		case 80:
+			key = 2;
+			SetColor('b');
+			SetCursorPosition(33, 20);
+			cout << "继续游戏";
+			SetBackColor();
+			SetCursorPosition(33, 22);
+			cout << "退出游戏";
+			break;
+		case 13:
+			if (key == 1)
+			{
+				SetColor('b');
+				SetCursorPosition(33, 20);
+				cout << "        ";
+				SetCursorPosition(33, 22);
+				cout << "        ";
+				return;
+			}
+			else if (key == 2)
+				exit(1);
+		default:
+			break;
+		}
+	}
+	
+
+}
+
+int GameInterface::GameOver()
+{
+	//边框
+	for (int i = 8; i <= 15; i++)
+	{
+		Point(i, 8, 'c', "■").Print();
+		Point(30-i, 8, 'c', "■").Print();
+		Sleep(20);
+	}
+	for (int i = 9; i <= 18; i++)
+	{
+		Point(8, i, 'c', "■").Print();
+		Point(22, i, 'c', "■").Print();
+		Sleep(20);
+	}
+	for (int i = 8; i <= 15; i++)
+	{
+		Point(i, 18, 'c', "■").Print();
+		Point(30 - i, 18, 'c', "■").Print();
+		Sleep(20);
+	}
+	SetColor('w');
+	SetCursorPosition(13, 10);
+	cout << "游戏结束";
+	SetCursorPosition(10, 12);
+	cout << "你的分数为：   " << score;
+	SetCursorPosition(10, 14);
+	cout << "重新来过？";
+	SetCursorPosition(10, 16);
+	SetBackColor();			//设置yes背景色
+	cout << "Yes";
+	SetColor('w');			//重新更改颜色
+	SetCursorPosition(18, 16);
+	cout << "No";
+
+	int ch;
+	int choice = 1;
+	while (ch = _getch())
+	{
+		switch (ch)
+		{
+		case 75:
+			choice = 1;
+			SetColor('w');			//重新更改颜色
+			SetCursorPosition(18, 16);
+			cout << "No";
+			SetCursorPosition(10, 16);
+			SetBackColor();			//设置yes背景色
+			cout << "Yes";
+			break;
+		case 77:
+			choice = 2;
+			SetColor('w');			//重新更改颜色
+			SetCursorPosition(10, 16);
+			cout << "Yes";
+			SetCursorPosition(18, 16);
+			SetBackColor();			//设置No背景色
+			cout << "No";
+			break;
+		case 13:
+			return choice;
+		default:
+			break;
+		}
+	}
+	
+	
+		
+	return 0;
 }
